@@ -463,8 +463,13 @@ void sendSMSAnswer(String smsMsg) {
   // ................................................... Quiet
   } else if(smsMsg.equals(CMD_QUIET) ) {
     // Invert the flag status
-    if(alerts.isQuiet) { alerts.isQuiet = false; }
-    else { alerts.isQuiet = true; }
+    if(alerts.isQuiet) { 
+      alerts.isQuiet = false; 
+      }
+    else { 
+      alerts.isQuiet = true; 
+      visualOff(); 
+      }
 
     response = changedSettings();
     sendResponse = true;
@@ -806,6 +811,17 @@ void setColor(int colorID) {
     digitalWrite(GREEN_PIN, rgb[colorID][L_GREEN]);
     digitalWrite(BLUE_PIN, rgb[colorID][L_BLUE]);
   }
+}
+
+// -----------------------------------------------------------------
+// Disable the visual notifications
+// -----------------------------------------------------------------
+void visualOff() {
+
+  // Executes the operation only if the quiet flag is not set
+  digitalWrite(RED_PIN, rgb[C_BLACK][L_RED]);
+  digitalWrite(GREEN_PIN, rgb[C_BLACK][L_GREEN]);
+  digitalWrite(BLUE_PIN, rgb[C_BLACK][L_BLUE]);
 }
 
 // -----------------------------------------------------------------

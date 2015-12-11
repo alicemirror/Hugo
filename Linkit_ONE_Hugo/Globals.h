@@ -31,7 +31,7 @@
 #define CMD_COLLECT "<cmd>Collect"
 #define CMD_WEB "<cmd>Web"
 
-#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.7\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
+#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.8\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
 #define CMD_BOARDARMED "Hugo 1.0\nBoard armed: send 'Info' for updates"
 #define CMD_ALREADYRUNNING "Already running (Send 'Info' for updates)"
 #define CMD_BOARDSTOPPED "Board stopped. Send 'Start' to follow"
