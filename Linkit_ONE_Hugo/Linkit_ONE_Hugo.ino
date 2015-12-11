@@ -196,7 +196,7 @@ void loop() {
     loopDelay = STANDBY_INTERVAL;
   }
 
-  delay(SMS_INTERVAL); // Loop delay
+  delay(loopDelay); // Loop delay
 // --------------------------------- LOOP END
 }
 
