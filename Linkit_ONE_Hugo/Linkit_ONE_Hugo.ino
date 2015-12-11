@@ -435,6 +435,7 @@ void sendSMSAnswer(String smsMsg) {
       response += getTemperature();
       response += getMotion();
       response += getGPSPosition();
+      response += getSettingsString();
       sendResponse = true;
     }
     else {
@@ -448,6 +449,7 @@ void sendSMSAnswer(String smsMsg) {
   
     sprintf(bl, CMD_FIRMWAREINFO, checkBatteryLevel());
     response = bl;
+    response += getSettingsString();
     sendResponse = true;
   // ................................................... Help
   } else if(smsMsg.equals(CMD_HELP) ) {
@@ -794,11 +796,16 @@ void setupControl() {
   inactivityWarning = 0;
   lowBatteryNotification = 0;
 
+  // Set the initial alert states and the default
+  // monitoring activity settings
   alerts.temperature = false;
   alerts.battery = false;
   alerts.batteryAutoAlert = false;
   alerts.motion = false;
   alerts.motionAlert = false;
+  alerts.onWeb = true;          // Send tracking to the cloud
+  alerts.isQuiet = false;       // Visual notifications are shown
+  alerts.isLogging = false;     // Does not log tracking to a local file
 }
 
 // -----------------------------------------------------------------
@@ -843,6 +850,19 @@ void checkAlerts() {
   else {
     alerts.motion = false;
   }
+}
+
+// -----------------------------------------------------------------
+// Reposrt the status of the customisable flags in human readable form
+// -----------------------------------------------------------------
+String getSettingsString() {
+  char flagsStatus[MSG_BUFFER];
+
+  sprintf(flagsStatus, CMD_SETTINGS, alerts.onWeb ? "yes" : "no", 
+                                     alerts.isQuiet ? "yes" : "no", 
+                                     alerts.isLogging ? "yes" : "no");
+  
+  return flagsStatus;
 }
 
 // -----------------------------------------------------------------

@@ -15,7 +15,7 @@
 #define REMOTE_NUMBER_LENGTH 20
 #define SMS_PAUSED 1000 // SMS Internal pause delay witing actions to be completed
 #define SMS_INTERVAL 2000 // SMS Check message period
-#define STANDBY_INTERVAL 10000 // Loop delay when the board is not active
+#define STANDBY_INTERVAL 30000 // Loop delay when the board is not active
 #define WARNING_BATTERY_LOW_LIMIT 34 // Battery level limit before automatic warnings
 #define MSG_BUFFER 160 // SMS Message string buffer length
 #define SIM_INIT_ERRORCOUNT 5 // Max number of retries intializing the SIM card
@@ -27,15 +27,19 @@
 #define CMD_HELP "<cmd>Help"
 #define CMD_OVERHEATING "<cmd>Hot"
 #define CMD_FIRMWARE "<cmd>Firmware"
+#define CMD_QUIET "<cmd>Quiet"
+#define CMD_COLLECT "<cmd>Collect"
+#define CMD_WEB "<cmd>Web"
 
-#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.5\n(rel. Dec, 9, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
+#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.6\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
 #define CMD_BOARDARMED "Hugo 1.0.4\nBoard armed: send 'Info' for updates"
 #define CMD_ALREADYRUNNING "Already running (Send 'Info' for updates)"
 #define CMD_BOARDSTOPPED "Board stopped. Send 'Start' to follow"
 #define CMD_NOTRUNNING "Not running (Send 'Start' to init)"
-#define CMD_UNKNOWN "Unknown (send: Start, Stop, Info, Help)"
+#define CMD_UNKNOWN "Unknown (send: Start, Stop, Info, Quiet, Web, Collect, Help)"
 #define CMD_NOINFO "Not running. Send 'Start' before"
-#define CMD_HELPMSG "Commands: Start, Stop, Info, Help"
+#define CMD_HELPMSG "Commands: Start, Stop, Info, Quiet, Web, Collect, Help"
+#define CMD_SETTINGS "\n(Web: %s, Quiet %s, Log %s)"
 
 #define WARNING_BATTERY "Warning, low battery!\n"
 #define BATTERY_LEVEL "Batt level: %d\n"
@@ -103,15 +107,15 @@
 
 // Color coding struct
 int rgb[8][3] = { 
-        { HIGH, LOW, LOW },     // RED
-        { LOW, HIGH, LOW },     // GREEN
-        { LOW, LOW, HIGH },     // BLUE
-        { HIGH, HIGH, LOW },    // YELLOW  
-        { HIGH, LOW, HIGH },    // MAGENTA
-        { LOW, HIGH, HIGH },    // CYAN
-        { HIGH, HIGH, HIGH },   // WHITE
-        { LOW, LOW, LOW }       // BLACK
-      };
+  { HIGH, LOW, LOW },     // RED
+  { LOW, HIGH, LOW },     // GREEN
+  { LOW, LOW, HIGH },     // BLUE
+  { HIGH, HIGH, LOW },    // YELLOW  
+  { HIGH, LOW, HIGH },    // MAGENTA
+  { LOW, HIGH, HIGH },    // CYAN
+  { HIGH, HIGH, HIGH },   // WHITE
+  { LOW, LOW, LOW }       // BLACK
+};
 
 struct warnings {
   boolean battery;              // Battery alert internal status
@@ -119,6 +123,9 @@ struct warnings {
   boolean motion;               // Spot motion status
   boolean temperature;          // Temperature limit status
   boolean motionAlert;          // Motion alert status (samples counter)
+  boolean onWeb;                // Web cloud update on/off status
+  boolean isQuiet;              // RGB LED notifications on/off status
+  boolean isLogging;            // Collect tracking data on a local file on/off
 };
 
 // colors structure IDs primary colors RGB
