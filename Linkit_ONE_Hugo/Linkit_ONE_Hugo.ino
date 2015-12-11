@@ -133,6 +133,7 @@ void loop() {
   if(armed) {
     // Check for the timer trigger
     if (millis() >= LastReport + FREQ_REMOTE) {
+      // Check if the web output is enabled
       // If battery counter reach the max value, it is updated the battery level
       // instead of the current GPS position
       String remoteData;  // Data string to send to the server
@@ -167,7 +168,11 @@ void loop() {
       } // Read GPS normally
       // Send the dta to the web
       setColor(WEB_COLOR);
-      uploadstatus(remoteData);
+      // Sends the data to the web only if the 
+      // on web flag is active
+      if(alerts.onWeb) {
+        uploadstatus(remoteData);
+      }
       setColor(C_BLACK);
       LastReport = millis();
     } // 
@@ -454,6 +459,30 @@ void sendSMSAnswer(String smsMsg) {
   // ................................................... Help
   } else if(smsMsg.equals(CMD_HELP) ) {
     response = CMD_HELPMSG;
+    sendResponse = true;
+  // ................................................... Quiet
+  } else if(smsMsg.equals(CMD_QUIET) ) {
+    // Invert the flag status
+    if(alerts.isQuiet) { alerts.isQuiet = false; }
+    else { alerts.isQuiet = true; }
+
+    response = changedSettings();
+    sendResponse = true;
+  // ................................................... Web
+  } else if(smsMsg.equals(CMD_WEB) ) {
+    // Invert the flag status
+    if(alerts.onWeb) { alerts.onWeb = false; }
+    else { alerts.onWeb = true; }
+
+    response = changedSettings();
+    sendResponse = true;
+  // ................................................... Collect
+  } else if(smsMsg.equals(CMD_COLLECT) ) {
+    // Invert the flag status
+    if(alerts.isLogging) { alerts.isLogging = false; }
+    else { alerts.isLogging = true; }
+
+    response = changedSettings();
     sendResponse = true;
   } 
   // ................................................... Unknown
@@ -771,10 +800,12 @@ int dataLength = dataVariable.length();
 // -----------------------------------------------------------------
 void setColor(int colorID) {
 
-  digitalWrite(RED_PIN, rgb[colorID][L_RED]);
-  digitalWrite(GREEN_PIN, rgb[colorID][L_GREEN]);
-  digitalWrite(BLUE_PIN, rgb[colorID][L_BLUE]);
-
+  // Executes the operation only if the quiet flag is not set
+  if(alerts.isQuiet == false) {
+    digitalWrite(RED_PIN, rgb[colorID][L_RED]);
+    digitalWrite(GREEN_PIN, rgb[colorID][L_GREEN]);
+    digitalWrite(BLUE_PIN, rgb[colorID][L_BLUE]);
+  }
 }
 
 // -----------------------------------------------------------------
@@ -859,6 +890,19 @@ String getSettingsString() {
   char flagsStatus[MSG_BUFFER];
 
   sprintf(flagsStatus, CMD_SETTINGS, alerts.onWeb ? "yes" : "no", 
+                                     alerts.isQuiet ? "yes" : "no", 
+                                     alerts.isLogging ? "yes" : "no");
+  
+  return flagsStatus;
+}
+
+// -----------------------------------------------------------------
+// Generate the response message afte some settings has changed.
+// -----------------------------------------------------------------
+String changedSettings() {
+  char flagsStatus[MSG_BUFFER];
+
+  sprintf(flagsStatus, CMD_CHANGE_SETTINGS, alerts.onWeb ? "yes" : "no", 
                                      alerts.isQuiet ? "yes" : "no", 
                                      alerts.isLogging ? "yes" : "no");
   

@@ -31,8 +31,8 @@
 #define CMD_COLLECT "<cmd>Collect"
 #define CMD_WEB "<cmd>Web"
 
-#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.6\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
-#define CMD_BOARDARMED "Hugo 1.0.4\nBoard armed: send 'Info' for updates"
+#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.7\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
+#define CMD_BOARDARMED "Hugo 1.0\nBoard armed: send 'Info' for updates"
 #define CMD_ALREADYRUNNING "Already running (Send 'Info' for updates)"
 #define CMD_BOARDSTOPPED "Board stopped. Send 'Start' to follow"
 #define CMD_NOTRUNNING "Not running (Send 'Start' to init)"
@@ -40,6 +40,7 @@
 #define CMD_NOINFO "Not running. Send 'Start' before"
 #define CMD_HELPMSG "Commands: Start, Stop, Info, Quiet, Web, Collect, Help"
 #define CMD_SETTINGS "\n(Web: %s, Quiet %s, Log %s)"
+#define CMD_CHANGE_SETTINGS "\nHugo 1.0\nCurrent settings\nWeb: %s, Quiet %s, Log %s)"
 
 #define WARNING_BATTERY "Warning, low battery!\n"
 #define BATTERY_LEVEL "Batt level: %d\n"
