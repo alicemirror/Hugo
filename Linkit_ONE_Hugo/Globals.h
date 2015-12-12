@@ -31,7 +31,7 @@
 #define CMD_COLLECT "<cmd>Collect"
 #define CMD_WEB "<cmd>Web"
 
-#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.9\n(rel. Dec, 11, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
+#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.11\n(rel. Dec, 12, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
 #define CMD_BOARDARMED "Hugo 1.0\nBoard armed: send 'Info' for updates"
 #define CMD_ALREADYRUNNING "Already running (Send 'Info' for updates)"
 #define CMD_BOARDSTOPPED "Board stopped. Send 'Start' to follow"
@@ -40,7 +40,7 @@
 #define CMD_NOINFO "Not running. Send 'Start' before"
 #define CMD_HELPMSG "Commands: Start, Stop, Info, Quiet, Web, Collect, Help"
 #define CMD_SETTINGS "\n(Web: %s, Quiet %s, Log %s)"
-#define CMD_CHANGE_SETTINGS "\nHugo 1.0\nCurrent settings\nWeb: %s, Quiet %s, Log %s)"
+#define CMD_CHANGE_SETTINGS "Hugo 1.0\nCurrent settings\nWeb: %s, Quiet %s, Log %s"
 
 #define WARNING_BATTERY "Warning, low battery!\n"
 #define BATTERY_LEVEL "Batt level: %d\n"
@@ -60,9 +60,32 @@
 #define WARNING_TEMPERATURE_LIMIT 42
 
 #define GPS_BUFF_LENGTH 256
-#define GPS_REQUEST_SMS 1 // Return a string link for Googlemaps
-#define GPS_REQUEST_WEB 2 // Return a string ready for sending to the server
+#define GPS_REQUEST_SMS 1   // Return a string link for Googlemaps
+#define GPS_REQUEST_WEB 2   // Return a string ready for sending to the server
+#define GPS_REQUEST_FILE 3  // Return a string ready for the log file
+
+// GPS Build strings
+// No GPS data for SMS message
 #define NO_GPS_DATA "No GPS data present"
+// Single-point google maps SMS
+#define GPS_GMAPS_SMS " http://maps.google.com/?q=%10.4f,%10.4f\n"
+// Single-poing UTC time SMS
+#define GPS_UTC_SMS "\nUTC time %2d:%2d:%2d\n"
+// Single-point Direction SMS
+#define GPS_DIRECTION_SMS "Direction: %c, %c\n"
+// Single-point GPS fix quality SMS
+#define GPS_FIX_SMS "GPS fix quality = %d\n"
+// Single-point GPS num satellites SMS
+#define GPS_SAT_SMS "Num satellites: %d\n"
+
+// Single-point for multiple points path in log file
+#define GPS_GMAPS_LOG "<a href='http://maps.google.com/?q=%10.4f,%10.4f'>Track point</a></br>\n"
+// Log file Google Maps link for multi-point header
+// It is the first log string writtend once when the log file is created
+#define GPS_GMAPS_LOG_HEADER "<header></header><html>"
+
+// Web string sent to the mediatek sandbox cloud
+#define GPS_CLOUD_WEB "%s%10.4f,%10.4f,0"
 
 // Mediateck SandBox keys
 #define DEVICEID "Dj89rB3z" // Input your deviceId
@@ -167,3 +190,13 @@ struct warnings {
 // Motion detection status
 #define MOTION_PIN 5
 
+// SD Card usage PIN
+#define SDCARD_PIN 10
+
+// Storage driver on the microSD card
+#define DRIVER LSD
+
+// Log file name
+#define LOG_FILE_NAME "Hugo-1_0.html"
+// Log file name length. Arrange this value accordingly with the LOG_FILE definition
+#define LOG_FILE_NAME_LENGTH 14

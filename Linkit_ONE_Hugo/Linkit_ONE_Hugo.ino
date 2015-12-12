@@ -11,6 +11,9 @@
 */
 
 #include <LGSM.h>
+#include <LFlash.h>
+#include <LSD.h>
+#include <LStorage.h>
 #include <LGPS.h>
 #include <LBattery.h>
 #include <LGPRS.h>
@@ -53,6 +56,9 @@ int inactivityWarning;
 // depending on the different loop delays when the board is running or
 // not, this alert occours with different frequencies
 int lowBatteryNotification;
+
+// Char array containing the file name
+char file[LOG_FILE_NAME_LENGTH] = "";
 
 // -------------------------------------------------------
 // Setup
@@ -186,18 +192,33 @@ void loop() {
   if(armed) {
     checkAlerts();
     alarmVisualAlerts();
-    setColor(C_WHITE);
-    loopDelay = FLASH_SHORT_SIGNAL;
-    setColor(C_BLACK);
+
+    // Write the data to the log file if the flag is set
+    // Note that wen logging is active, the activity flashing color
+    // is compound cyan + white
+    if(alerts.isLogging) {
+      String logGPS;
+      logGPS = getGPSLogPosition();
+      writeLogRecord(logGPS);
+      flashColor(C_CYAN, FLASH_SHORT_SIGNAL);
+    }
+    flashColor(C_WHITE, FLASH_SHORT_SIGNAL);
   } else {
-    setColor(C_CYAN);
-    delay(FLASH_SHORT_SIGNAL);
-    setColor(C_BLACK);
+    flashColor(C_CYAN, FLASH_SHORT_SIGNAL);
     loopDelay = STANDBY_INTERVAL;
   }
 
   delay(loopDelay); // Loop delay
 // --------------------------------- LOOP END
+}
+
+// -------------------------------------------------------
+// Generates a flash signal of the specified color and duration
+// -------------------------------------------------------
+void flashColor(int colorID, int freq) {
+    setColor(colorID);
+    delay(freq);
+    setColor(C_BLACK);
 }
 
 // -------------------------------------------------------
@@ -484,8 +505,15 @@ void sendSMSAnswer(String smsMsg) {
   // ................................................... Collect
   } else if(smsMsg.equals(CMD_COLLECT) ) {
     // Invert the flag status
-    if(alerts.isLogging) { alerts.isLogging = false; }
-    else { alerts.isLogging = true; }
+    if(alerts.isLogging) { 
+      alerts.isLogging = false; 
+      }
+    else { 
+      alerts.isLogging = true; 
+      // Try to initialise the drive, if possible. If an error occurs
+      // the flag is reset automatically
+      initSDCard();
+      }
 
     response = changedSettings();
     sendResponse = true;
@@ -577,6 +605,16 @@ String getGPSPosition() {
 }
 
 // -----------------------------------------------------------------
+// Get the actual GPS position for log file
+// -----------------------------------------------------------------
+String getGPSLogPosition() {
+  gpsSentenceInfoStruct info;
+  
+  LGPS.getData(&info);
+  return parseGPGGA((const char*)info.GPGGA, GPS_REQUEST_FILE);
+}
+
+// -----------------------------------------------------------------
 // Get the actual GPS position for Mediatek sandbox variable
 // -----------------------------------------------------------------
 String getGPSWebPosition() {
@@ -616,7 +654,7 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
 
     //get time
     if(typeRequest == GPS_REQUEST_SMS) {
-      sprintf(buff, "\nUTC time %2d:%2d:%2d\n", hour, minute, second);
+      sprintf(buff, GPS_UTC_SMS, hour, minute, second);
       response = buff;
     }
     
@@ -631,12 +669,17 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
     longitude = convertLongitude(longitudetmp);
     
     if(typeRequest == GPS_REQUEST_SMS) {
-      sprintf(buff, " http://maps.google.com/?q=%10.4f,%10.4f\n", latitude, longitude);
+      // Add the GPS data to the SMS response message
+      sprintf(buff, GPS_GMAPS_SMS, latitude, longitude);
       response += removeSpaces(buff);
+    } else if(typeRequest == GPS_REQUEST_FILE) {
+      // Prepare the bare coordinates for logging
+      sprintf(buff, GPS_GMAPS_LOG, latitude, longitude);
+      response = removeSpaces(buff);
     }
     else {
       // Build the response string for the web
-      sprintf(buff, "%s%10.4f,%10.4f,0", REMOTE_POSITION, latitude, longitude);
+      sprintf(buff, GPS_CLOUD_WEB, REMOTE_POSITION, latitude, longitude);
       response = removeSpaces(buff);
     }
 
@@ -647,19 +690,19 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
       latitude_dir = (GPGGAstr[tmp]);
       tmp = getComma(5, GPGGAstr);    
       longitude_dir = (GPGGAstr[tmp]);
-      sprintf(buff, "Direction: %c, %c\n", latitude_dir, longitude_dir);
+      sprintf(buff, GPS_DIRECTION_SMS, latitude_dir, longitude_dir);
       response += buff;
     
       //get GPS fix quality
       tmp = getComma(6, GPGGAstr);
       fix = getIntNumber(&GPGGAstr[tmp]);    
-      sprintf(buff, "GPS fix quality = %d\n", fix);
+      sprintf(buff, GPS_FIX_SMS, fix);
       response += buff;
 
       //get satellites in view
       tmp = getComma(7, GPGGAstr);
       num = getIntNumber(&GPGGAstr[tmp]);    
-      sprintf(buff, "Num satellites: %d\n", num);
+      sprintf(buff, GPS_SAT_SMS, num);
       response += buff;
     } // request type is SMS
 
@@ -670,7 +713,7 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
       return NO_GPS_DATA; 
     } // SMS message
     else {
-      return ""; // Web varuabke
+      return ""; // empty string for both web and log file cases
     }
   } // No GPS data
 }
@@ -825,14 +868,66 @@ void visualOff() {
 }
 
 // -----------------------------------------------------------------
+// Initializes the micro SD card storage driver
+// -----------------------------------------------------------------
+void initSDCard() {
+  // Check if the log flag is set
+  if(alerts.isLogging) {
+      // If possible initialise the driver, else reset the flag
+      if(!DRIVER.begin()) {
+        // reset the flag
+        alerts.isLogging = false;
+      } // Error opening the micro SD card, log flag reset
+    else {
+      // Delete the same name old file if exists and initialize a new one
+      if(DRIVER.exists(LOG_FILE_NAME)) {
+        DRIVER.remove(LOG_FILE_NAME);
+      } // Removed old log file name
+      // Create the data file ID and write the log header
+      LFile dataFile = DRIVER.open(file, FILE_WRITE);
+      // If the file has been opened write the header
+      if(dataFile) {
+        dataFile.print(GPS_GMAPS_LOG_HEADER);
+        dataFile.close();
+      } // File created and header written
+      else {
+        // reset the flag
+        alerts.isLogging = false;
+      } // Error opening the file
+    } // log flag is set
+  } // Log flag is set
+}
+
+// -----------------------------------------------------------------
+// Write a GPS log record on the data file
+// Note: the file should be initialized
+// -----------------------------------------------------------------
+void writeLogRecord(String data) {
+  // Create the data file ID and write the log header
+  LFile dataFile = DRIVER.open(file, FILE_WRITE);
+  
+  // If it is impossible to open the file, the log flag is reset
+  if(dataFile) {
+    dataFile.print(data);
+    dataFile.close();
+  } // File created and header written
+  else {
+    // Error opening the file, reset the log flag
+    alerts.isLogging = false;
+  }
+}
+
+// -----------------------------------------------------------------
 // Initializes the I/O pins of the control panel and configuration status
 // -----------------------------------------------------------------
 void setupControl() {
+  String file_name;
   
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
   pinMode(MOTION_PIN, INPUT);
+  pinMode(SDCARD_PIN, OUTPUT);
 
   armed = false;  // Board boot as not running
   cardReady = false;  // Enabled on MicroSD card initialisation
@@ -842,6 +937,11 @@ void setupControl() {
   motionCounter = CYCLES_MOTION;
   inactivityWarning = 0;
   lowBatteryNotification = 0;
+
+  // Prepare che log file name (if log is not active, the file name
+  // will not be used
+  file_name = LOG_FILE_NAME;
+  file_name.toCharArray(file, LOG_FILE_NAME_LENGTH);
 
   // Set the initial alert states and the default
   // monitoring activity settings
@@ -863,8 +963,7 @@ void welcomeSequence() {
   // Loop over all the colors in sequence from RED to BLACK
   for(int j = C_RED; j <= C_BLACK; j++) {
     for(int k = 0; k < 3; k ++) {
-      setColor(j);
-      delay(FLASH_SHORT_SIGNAL);
+      flashColor(j, FLASH_SHORT_SIGNAL);
     } // every color cycle
   } // all colors loop
   
@@ -932,9 +1031,7 @@ void alarmVisualAlerts() {
 
   // Check temperature alert
   if(alerts.temperature) {
-    setColor(TEMPERATURE_ALERT_COLOR);
-    delay(FLASH_ALERT_SIGNAL);
-    setColor(C_BLACK);
+    flashColor(TEMPERATURE_ALERT_COLOR, FLASH_ALERT_SIGNAL);
     delay(FLASH_SHORT_SIGNAL);
   }
 
@@ -942,9 +1039,7 @@ void alarmVisualAlerts() {
     // Check if it is time to enable the warning
     if(inactivityWarning >= MAX_INACTIVITY_WARNING) {
       alerts.motionAlert = true;
-      setColor(MOTION_ALERT_COLOR);
-      delay(FLASH_ALERT_SIGNAL);
-      setColor(C_BLACK);
+      flashColor(MOTION_ALERT_COLOR, FLASH_ALERT_SIGNAL);
       delay(FLASH_SHORT_SIGNAL);
       inactivityWarning = 0;
     } // Set warning
@@ -952,9 +1047,7 @@ void alarmVisualAlerts() {
       alerts.motionAlert = false;
       // increase the counter
       inactivityWarning++;
-      setColor(MOTION_WARNING_COLOR);
-      delay(FLASH_ALERT_SIGNAL);
-      setColor(C_BLACK);
+      flashColor(MOTION_WARNING_COLOR, FLASH_ALERT_SIGNAL);
       delay(FLASH_SHORT_SIGNAL);
     } // Alert persists, increase counter
   } // Motion is in alert condition
@@ -963,16 +1056,12 @@ void alarmVisualAlerts() {
     // Reset the warning counter
     alerts.motionAlert = false;
     inactivityWarning = 0;
-    setColor(MOVING_COLOR);
-    delay(FLASH_ALERT_SIGNAL);
-    setColor(C_BLACK);
+    flashColor(MOVING_COLOR, FLASH_ALERT_SIGNAL);
     delay(FLASH_SHORT_SIGNAL);
   }
    
    if(alerts.battery) {
-    setColor(BATTERY_ALERT_COLOR);
-    delay(FLASH_ALERT_SIGNAL);
-    setColor(C_BLACK);
+    flashColor(BATTERY_ALERT_COLOR, FLASH_ALERT_SIGNAL);
     delay(FLASH_SHORT_SIGNAL);
    }
 }
