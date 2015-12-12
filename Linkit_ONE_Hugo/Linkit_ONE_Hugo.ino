@@ -279,6 +279,16 @@ String getTemperature() {
   return tempLevel;
 }
 
+// -------------------------------------------------------
+// Get the temperature string for log record
+// -------------------------------------------------------
+String getLogTemperature() {
+  char tempLevel[MSG_BUFFER];
+
+  sprintf(tempLevel, TEMPERATURE_LOG, checkTemperature());
+  
+  return tempLevel;
+}
 
 // -------------------------------------------------------
 // Get the temperature alert string for message
@@ -302,6 +312,22 @@ String getMotion() {
   }
   else {
     sprintf(motionStatus, MOTION, MOTION_OFF);
+  }
+  
+  return motionStatus;
+}
+
+// -------------------------------------------------------
+// Get the motion status string for log record
+// -------------------------------------------------------
+String getLogMotion() {
+  char motionStatus[MSG_BUFFER];
+
+  if(alerts.motionAlert) {
+    sprintf(motionStatus, MOTION_LOG, MOTION_ON);
+  }
+  else {
+    sprintf(motionStatus, MOTION_LOG, MOTION_OFF);
   }
   
   return motionStatus;
@@ -652,11 +678,17 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
     minute   = (GPGGAstr[tmp + 2] - '0') * 10 + (GPGGAstr[tmp + 3] - '0');
     second    = (GPGGAstr[tmp + 4] - '0') * 10 + (GPGGAstr[tmp + 5] - '0');
 
-    //get time
+    // Get time for SMS message
     if(typeRequest == GPS_REQUEST_SMS) {
       sprintf(buff, GPS_UTC_SMS, hour, minute, second);
       response = buff;
     }
+
+    // Get time for record log
+    if(typeRequest == GPS_REQUEST_FILE) {
+      sprintf(buff, GPS_UTC_LOG, hour, minute, second);
+      response = buff;
+    }    
     
     //get lat/lon coordinates
     float latitudetmp;
@@ -674,8 +706,8 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
       response += removeSpaces(buff);
     } else if(typeRequest == GPS_REQUEST_FILE) {
       // Prepare the bare coordinates for logging
-      sprintf(buff, GPS_GMAPS_LOG, latitude, longitude);
-      response = removeSpaces(buff);
+      sprintf(buff, GPS_GMAPS_LOG, latitude, longitude, latitude, longitude);
+      response += buff; // String should be built with spaces !
     }
     else {
       // Build the response string for the web
@@ -683,7 +715,7 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
       response = removeSpaces(buff);
     }
 
-    // Extra info: direction and satellite information only in the SMS response
+    // Extra info: direction and satellite information for the SMS response
     if(typeRequest == GPS_REQUEST_SMS) {
       //get lat/lon direction
       tmp = getComma(3, GPGGAstr);
@@ -703,6 +735,23 @@ String parseGPGGA(const char* GPGGAstr, int typeRequest){
       tmp = getComma(7, GPGGAstr);
       num = getIntNumber(&GPGGAstr[tmp]);    
       sprintf(buff, GPS_SAT_SMS, num);
+      response += buff;
+    } // request type is SMS
+
+    // Extra info: direction and satellite information for the log record
+    if(typeRequest == GPS_REQUEST_FILE) {
+      //get lat/lon direction
+      tmp = getComma(3, GPGGAstr);
+      latitude_dir = (GPGGAstr[tmp]);
+      tmp = getComma(5, GPGGAstr);    
+      longitude_dir = (GPGGAstr[tmp]);
+      sprintf(buff, GPS_DIRECTION_LOG, latitude_dir, longitude_dir);
+      response += buff;
+    
+      //get satellites in view
+      tmp = getComma(7, GPGGAstr);
+      num = getIntNumber(&GPGGAstr[tmp]);    
+      sprintf(buff, GPS_SAT_LOG, num);
       response += buff;
     } // request type is SMS
 
@@ -887,7 +936,10 @@ void initSDCard() {
       LFile dataFile = DRIVER.open(file, FILE_WRITE);
       // If the file has been opened write the header
       if(dataFile) {
-        dataFile.print(GPS_GMAPS_LOG_HEADER);
+        dataFile.println(GPS_GMAPS_LOG_HEADER1);
+        dataFile.println(GPS_GMAPS_LOG_HEADER2);
+        dataFile.println(GPS_GMAPS_LOG_HEADER3);
+        dataFile.println(GPS_GMAPS_LOG_HEADER4);
         dataFile.close();
       } // File created and header written
       else {
@@ -905,10 +957,16 @@ void initSDCard() {
 void writeLogRecord(String data) {
   // Create the data file ID and write the log header
   LFile dataFile = DRIVER.open(file, FILE_WRITE);
+  String logHtmlData;
+
+  // Create the full html string for log record
+  logHtmlData = getLogTemperature();
+  logHtmlData += getLogMotion();
+  logHtmlData += data;
   
   // If it is impossible to open the file, the log flag is reset
   if(dataFile) {
-    dataFile.print(data);
+    dataFile.println(logHtmlData);
     dataFile.close();
   } // File created and header written
   else {
@@ -952,7 +1010,7 @@ void setupControl() {
   alerts.motionAlert = false;
   alerts.onWeb = true;          // Send tracking to the cloud
   alerts.isQuiet = false;       // Visual notifications are shown
-  alerts.isLogging = false;     // Does not log tracking to a local file
+  alerts.isLogging = true;      // Log tracking by default
 }
 
 // -----------------------------------------------------------------

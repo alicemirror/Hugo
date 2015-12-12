@@ -31,7 +31,7 @@
 #define CMD_COLLECT "<cmd>Collect"
 #define CMD_WEB "<cmd>Web"
 
-#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.11\n(rel. Dec, 12, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
+#define CMD_FIRMWAREINFO "Hugo 1.0 Rev.12\n(rel. Dec, 12, 2015)\nBattery level: %d\nBalearic Dynamics, Spain\nbalearicdynamics@gmail.com"
 #define CMD_BOARDARMED "Hugo 1.0\nBoard armed: send 'Info' for updates"
 #define CMD_ALREADYRUNNING "Already running (Send 'Info' for updates)"
 #define CMD_BOARDSTOPPED "Board stopped. Send 'Start' to follow"
@@ -45,8 +45,10 @@
 #define WARNING_BATTERY "Warning, low battery!\n"
 #define BATTERY_LEVEL "Batt level: %d\n"
 #define TEMPERATURE "Temperature: %2.2fC\n"
+#define TEMPERATURE_LOG "<p>Temperature: %2.2fC<br>\n"
 #define WARNING_TEMPERATURE "OVERHEATING!!!\nTemperature %2.2fC is too high!\n"
 #define MOTION "Motion status: %s\n"
+#define MOTION_LOG "Motion status: %s<br>\n"
 
 // Motion statuses
 #define MOTION_ON "active"
@@ -79,10 +81,20 @@
 #define GPS_SAT_SMS "Num satellites: %d\n"
 
 // Single-point for multiple points path in log file
-#define GPS_GMAPS_LOG "<a href='http://maps.google.com/?q=%10.4f,%10.4f'>Track point</a></br>\n"
+#define GPS_GMAPS_LOG "<a href='http://maps.google.com/?q=%10.4f,%10.4f'; target=_blank>Position: %10.4f,%10.4f</a> "
+// Single-poing UTC time log file
+#define GPS_UTC_LOG "UTC time %2d:%2d:%2d"
+// Single-point Direction log file
+#define GPS_DIRECTION_LOG "%c, %c<br>\n"
+// Single-point GPS num satellites SMS
+#define GPS_SAT_LOG "(based on %d satellites)</p>\n"
+
 // Log file Google Maps link for multi-point header
 // It is the first log string writtend once when the log file is created
-#define GPS_GMAPS_LOG_HEADER "<header></header><html>"
+#define GPS_GMAPS_LOG_HEADER1 "<title>Hugo 1.0 Tracking log</title></header>"
+#define GPS_GMAPS_LOG_HEADER2 "<html><center><h1>Hugo 1.0 Tracking log history</h1><img src=\"images/hugo.jpg\" /></center>"
+#define GPS_GMAPS_LOG_HEADER3 "<p algin = justify>This is the list of the last tracking section. The collected data are shown in chronological order, from the first to the last</p>"
+#define GPS_GMAPS_LOG_HEADER4 "<h3>Click on one of the points below to show the position on Google Maps</h3>"
 
 // Web string sent to the mediatek sandbox cloud
 #define GPS_CLOUD_WEB "%s%10.4f,%10.4f,0"
